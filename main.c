@@ -37,9 +37,10 @@ int status;
 int new_switch_state;
 int switch_state = -1;
 
-
-volatile int motor = 0;
-
+static int count;
+static  int  motor  = 0 ;
+static  int  motorWork = 0 ;
+static  int valeur  = 0 ;
 //====================================================================
 // >>>>>>>>>>>>>>>>>>>>>>>>>> MAIN <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 //====================================================================
@@ -116,10 +117,20 @@ int main(void)
 
 #if DYN_ANEMO
         callback_dynamo();
-        if (motor)
-            dxl_setGoalVelocity(1, 140);
+        if (motor){
+            dxl_setGoalVelocity(1, 100);
+
+    }
         else
+             dxl_setGoalVelocity(1, 0);
+
+
+        if  (motorWork){
+            dxl_setGoalVelocity(1, valeur);
+        }else{
             dxl_setGoalVelocity(1, 0);
+
+        }
 #endif
 
 #if VL6180X_PRESS_HUM_TEMP
@@ -148,7 +159,16 @@ void callback_dynamo(void)
     {
         t0 = HAL_GetTick();
 
-        uint32_t count = (uint32_t)anemo_GetCount();
+        count = (uint32_t)anemo_GetCount();
+
+
+        if (count  > 10 ){
+
+        	motor = 1 ;
+        }else
+        	motor = 0  ;
+
+
         anemo_ResetCount();
 
         txMsg.id = 0x56;
@@ -176,8 +196,21 @@ void can_callback(void)
 	can_Read(&msg_rcv);
 
     if (msg_rcv.id== 0x03){
-        term_printf("it is  work......................................................................................");
-        //motor = !motor;
+
+      if  (msg_rcv.data[0] == 0x10){
+      term_printf("motor work");
+      motorWork = 1 ;
+      valeur  = msg_rcv.data[1];
+
+       }
+        if (msg_rcv.data[0] == 0x20){
+       	term_printf("motor stop");
+        motorWork = 0 ;
+
+
+     }
+
+
     }
 
 
